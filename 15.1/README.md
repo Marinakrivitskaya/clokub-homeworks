@@ -35,3 +35,37 @@
 - [VPC](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc)
 - [Subnet](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet)
 - [Internet Gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway)
+
+Решение.
+```
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "~> 3.28”
+    }
+  }
+}
+```
+```
+# Configure the AWS Provider 
+
+provider "aws" {
+  region = "eu-south-1”
+}
+```
+```
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = “my-vpc“
+  cidr = "172.31.0.0/16"
+
+  azs = ["eu-south-1a", "eu-south-1b", "eu-south-1c"]
+
+  tags = {
+    Terraform = "true"
+    Environment = “dev”
+  }
+}
+```
