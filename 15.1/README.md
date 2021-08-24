@@ -37,6 +37,7 @@
 - [Internet Gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway)
 
 Решение.
+1. Создать VPC.
 ```
 terraform {
   required_providers {
@@ -68,4 +69,93 @@ module "vpc" {
     Environment = “dev”
   }
 }
+```
+2. Публичная сеть.
+```
+ resource "aws_subnet" "public" {
+    vpc_id       = module.vpc.vpc_id
+    cidr_block = "172.31.32.0/19"
+
+  tags = {
+    Name = "public"
+  }
+}
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = module.vpc.vpc_id
+
+  tags = {
+    Name = “gw”
+  }
+}
+
+resource "aws_route_table" “route” {
+  vpc_id = module.vpc.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+ tags = {
+    Name = “route”
+  }
+}
+
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.route.id
+}
+```
+<img width="491" alt="Screenshot 2021-08-24 at 15 38 24" src="https://user-images.githubusercontent.com/67638098/130626834-4b8f9726-0ca9-4ce3-8d38-8e4cbfbb0863.png">
+
+
+3. Приватная сеть.
+```
+resource "aws_subnet" "private" {
+  vpc_id     = module.vpc.vpc_id
+  cidr_block = "172.31.96.0/19"
+
+  tags = {
+    Name = "private"
+  }
+}
+
+resource "aws_eip" "ip_for_nat" {
+  vpc      = true
+}
+
+resource "aws_nat_gateway"  "private_subnet” {
+  allocation_id = aws_eip.ip_for_nat.id
+  subnet_id     = aws_subnet.public.id
+
+  tags = {
+    Name = "gw NAT"
+  }
+  depends_on = [aws_internet_gateway.gw]
+}
+
+
+resource "aws_route_table" "private_route" {
+  vpc_id = module.vpc.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.private_subnet.id
+  }
+  tags = {
+    Name = "private route" 
+  }
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private_route.id
+}
+
+```
+<img width="483" alt="Screenshot 2021-08-24 at 16 45 25" src="https://user-images.githubusercontent.com/67638098/130638121-5ceae4c5-8de8-4cb7-a202-c2c3e237f968.png">
+
+4. VPN.
+```
+
 ```
