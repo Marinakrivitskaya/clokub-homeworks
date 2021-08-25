@@ -157,5 +157,29 @@ resource "aws_route_table_association" "b" {
 
 4. VPN.
 ```
+resource "aws_ec2_client_vpn_endpoint" "my_vpn_endpoint" {
+  description            = "terraform-clientvpn-endpoint"
+  server_certificate_arn = "arn:aws:acm:eu-south-1:475618787347:certificate/0e256650-c9d6-4b16-9ab0-d38bd9b45bfc"
+  client_cidr_block      = "10.0.0.0/16"
 
+  authentication_options {
+    type                       = "certificate-authentication"
+    root_certificate_chain_arn = "arn:aws:acm:eu-south-1:475618787347:certificate/18b0cb8e-7544-4bb4-b1e5-95a714b32130"
+  }
+
+  connection_log_options {
+    enabled               = false
+  }
+}
+
+resource "aws_ec2_client_vpn_network_association" "vpn_to_private__association" {
+  client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.my_vpn_endpoint.id
+  subnet_id              = aws_subnet.private.id
+}
+
+resource "aws_ec2_client_vpn_authorization_rule" "default_vpn_authorization_rule" {
+  client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.my_vpn_endpoint.id
+  target_network_cidr    = aws_subnet.private.cidr_block
+  authorize_all_groups   = true
+}
 ```
